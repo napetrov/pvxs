@@ -4,75 +4,111 @@ on:
   pull_request:
   push:
     branches: [master]
-    tags: ['*']
   workflow_dispatch:
+
+# PR code is built with the read-only GITHUB_TOKEN.  Baselines are made only
+# from an explicit trusted dispatch; this workflow never comments on PRs.
+permissions:
+  contents: read
 
 concurrency:
   group: abicheck-shadow-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# The scanner is an advisory, parallel signal.  It needs no PR comments, no
-# status write access, and no repository secrets.
-permissions:
-  contents: read
+env:
+  ABICHECK_REF: fb423dfd62c267b0db61739941f2d35ee2dacb16
+  BUILD_JOBS: "2"
 
 jobs:
-  abicheck-shadow:
+  compare:
     runs-on: ubuntu-latest
-    # An L2 build-evidence scan runs two revisions of both public DSOs.
-    # Keep this above the measured ~100-minute worst case, not at 45 minutes.
     timeout-minutes: 120
-    env:
-      SETUP_PATH: .ci-local
-      SET: defaults
-      CMP: gcc
-      BCFG: default
-      BASE: "7.0"
-      _PVXS_ABORT_ON_CRIT: 1
-      PVXS_LOG: pvxs.*=WARN
-      ABICHECK_MAKE_JOBS: "2"
-      ABICHECK_REF: fb423dfd62c267b0db61739941f2d35ee2dacb16
-
     steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: "0"
-        submodules: true
-        persist-credentials: false
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+          persist-credentials: false
 
-    - name: Install scanner tools
-      shell: bash
-      run: |
-        set -euxo pipefail
-        sudo apt-get update
-        sudo apt-get -y install libreadline-dev libevent-dev cmake bear
-        /usr/share/miniconda/bin/conda install -y -c conda-forge castxml
-        VENV="$RUNNER_TEMP/abicheck-venv"
-        python -m venv "$VENV"
-        "$VENV/bin/pip" install --disable-pip-version-check \
-          "git+https://github.com/abicheck/abicheck@${ABICHECK_REF}"
-        echo "/usr/share/miniconda/bin" >> "$GITHUB_PATH"
-        echo "$VENV/bin" >> "$GITHUB_PATH"
-        echo "ABICHECK=$VENV/bin/abicheck" >> "$GITHUB_ENV"
+      - name: Select comparison revision
+        id: revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = pull_request ]; then
+            old=${{ github.event.pull_request.base.sha }}
+          elif [ "${{ github.event_name }}" = push ]; then
+            old=${{ github.event.before }}
+          else
+            old=$(git describe --tags --abbrev=0 HEAD^)
+          fi
+          test "$old" != 0000000000000000000000000000000000000000
+          git cat-file -e "$old^{commit}"
+          echo "old=$old" >> "$GITHUB_OUTPUT"
+          echo "new=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-    - name: Verify scanner tools
-      shell: bash
-      run: |
-        set -euxo pipefail
-        castxml --version
-        "$ABICHECK" --version
+      - name: Install build dependencies
+        run: python .ci/cue.py prepare
 
-    - name: Prepare EPICS dependencies
-      run: python .ci/cue.py prepare
+      # Build HEAD once using PVXS's normal build/install targets.  ABICheck
+      # reads only the installed public headers and linux-* library artifacts.
+      - name: Build and stage candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          make -j"$BUILD_JOBS" ioc
+          make -j"$BUILD_JOBS" install INSTALL_LOCATION="$RUNNER_TEMP/pvxs-new"
+          .github/workflows/abicheck-stage-installed.sh "$RUNNER_TEMP/pvxs-new" "$RUNNER_TEMP/abicheck-new"
+          cp .github/workflows/abicheck-stage-installed.sh "$RUNNER_TEMP/abicheck-stage-installed.sh"
 
-    - name: Run L2 build-evidence shadow scan
-      run: python .ci/cue.py exec ./.ci-local/abicheck-diff.sh
+      # Reuse the checkout and normal build, rather than maintaining a second
+      # bespoke builder.  Resetting also ensures the old build cannot inherit
+      # generated candidate objects.
+      - name: Clean, reset, and stage baseline revision
+        shell: bash
+        env:
+          OLD_SHA: ${{ steps.revisions.outputs.old }}
+        run: |
+          set -euo pipefail
+          git clean -ffdx
+          git checkout --detach "$OLD_SHA"
+          python .ci/cue.py prepare
+          make -j"$BUILD_JOBS" ioc
+          make -j"$BUILD_JOBS" install INSTALL_LOCATION="$RUNNER_TEMP/pvxs-old"
+          "$RUNNER_TEMP/abicheck-stage-installed.sh" "$RUNNER_TEMP/pvxs-old" "$RUNNER_TEMP/abicheck-old"
 
-    - name: Upload ABICheck reports
-      if: ${{ always() }}
-      uses: actions/upload-artifact@v7
-      with:
-        retention-days: 30
-        name: abicheck-shadow
-        path: compat_reports/abicheck
-        if-no-files-found: error
+      - name: Compare libpvxs
+        uses: abicheck/abicheck@fb423dfd62c267b0db61739941f2d35ee2dacb16
+        with:
+          mode: compare
+          old-library: ${{ runner.temp }}/abicheck-old/lib/libpvxs.so
+          new-library: ${{ runner.temp }}/abicheck-new/lib/libpvxs.so
+          old-header: ${{ runner.temp }}/abicheck-old/include/pvxs
+          new-header: ${{ runner.temp }}/abicheck-new/include/pvxs
+          old-include: ${{ runner.temp }}/abicheck-old/include ${{ runner.temp }}/abicheck-old/epics/include ${{ runner.temp }}/abicheck-old/epics/include/os/Linux ${{ runner.temp }}/abicheck-old/epics/include/compiler/gcc
+          new-include: ${{ runner.temp }}/abicheck-new/include ${{ runner.temp }}/abicheck-new/epics/include ${{ runner.temp }}/abicheck-new/epics/include/os/Linux ${{ runner.temp }}/abicheck-new/epics/include/compiler/gcc
+          depth: headers
+          pr-comment: false
+          output-file: compat_reports/abicheck/libpvxs.json
+
+      - name: Compare libpvxsIoc
+        uses: abicheck/abicheck@fb423dfd62c267b0db61739941f2d35ee2dacb16
+        with:
+          mode: compare
+          old-library: ${{ runner.temp }}/abicheck-old/lib/libpvxsIoc.so
+          new-library: ${{ runner.temp }}/abicheck-new/lib/libpvxsIoc.so
+          old-header: ${{ runner.temp }}/abicheck-old/include/pvxs/iochooks.h
+          new-header: ${{ runner.temp }}/abicheck-new/include/pvxs/iochooks.h
+          old-include: ${{ runner.temp }}/abicheck-old/include ${{ runner.temp }}/abicheck-old/epics/include ${{ runner.temp }}/abicheck-old/epics/include/os/Linux ${{ runner.temp }}/abicheck-old/epics/include/compiler/gcc
+          new-include: ${{ runner.temp }}/abicheck-new/include ${{ runner.temp }}/abicheck-new/epics/include ${{ runner.temp }}/abicheck-new/epics/include/os/Linux ${{ runner.temp }}/abicheck-new/epics/include/compiler/gcc
+          depth: headers
+          pr-comment: false
+          output-file: compat_reports/abicheck/libpvxsIoc.json
+
+      - name: Upload reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: abicheck-shadow
+          path: compat_reports/abicheck
+          if-no-files-found: warn
