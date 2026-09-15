@@ -16,7 +16,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ABICHECK_REF: fb423dfd62c267b0db61739941f2d35ee2dacb16
   BUILD_JOBS: "2"
 
 jobs:
@@ -78,7 +77,7 @@ jobs:
           "$RUNNER_TEMP/abicheck-stage-installed.sh" "$RUNNER_TEMP/pvxs-old" "$RUNNER_TEMP/abicheck-old"
 
       - name: Compare libpvxs
-        uses: abicheck/abicheck@fb423dfd62c267b0db61739941f2d35ee2dacb16
+        uses: abicheck/abicheck@112386dc8dff97c837f9fb57fbc13d4ef4c012b1
         with:
           mode: compare
           old-library: ${{ runner.temp }}/abicheck-old/lib/libpvxs.so
@@ -92,7 +91,7 @@ jobs:
           output-file: compat_reports/abicheck/libpvxs.json
 
       - name: Compare libpvxsIoc
-        uses: abicheck/abicheck@fb423dfd62c267b0db61739941f2d35ee2dacb16
+        uses: abicheck/abicheck@112386dc8dff97c837f9fb57fbc13d4ef4c012b1
         with:
           mode: compare
           old-library: ${{ runner.temp }}/abicheck-old/lib/libpvxsIoc.so

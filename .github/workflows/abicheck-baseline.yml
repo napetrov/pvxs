@@ -46,7 +46,7 @@ jobs:
           make -j2 install INSTALL_LOCATION="$RUNNER_TEMP/pvxs-baseline"
           .github/workflows/abicheck-stage-installed.sh "$RUNNER_TEMP/pvxs-baseline" "$RUNNER_TEMP/abicheck-baseline-input"
       - name: Capture reusable baseline-set
-        uses: abicheck/abicheck/actions/baseline@fb423dfd62c267b0db61739941f2d35ee2dacb16
+        uses: abicheck/abicheck/actions/baseline@112386dc8dff97c837f9fb57fbc13d4ef4c012b1
         with:
           libraries: >-
             [{"name":"libpvxs","artifact":"${{ runner.temp }}/abicheck-baseline-input/lib/libpvxs.so","header":"${{ runner.temp }}/abicheck-baseline-input/include/pvxs","include":"${{ runner.temp }}/abicheck-baseline-input/include ${{ runner.temp }}/abicheck-baseline-input/epics/include ${{ runner.temp }}/abicheck-baseline-input/epics/include/os/Linux ${{ runner.temp }}/abicheck-baseline-input/epics/include/compiler/gcc","stage_binary":true},{"name":"libpvxsIoc","artifact":"${{ runner.temp }}/abicheck-baseline-input/lib/libpvxsIoc.so","header":"${{ runner.temp }}/abicheck-baseline-input/include/pvxs/iochooks.h","include":"${{ runner.temp }}/abicheck-baseline-input/include ${{ runner.temp }}/abicheck-baseline-input/epics/include ${{ runner.temp }}/abicheck-baseline-input/epics/include/os/Linux ${{ runner.temp }}/abicheck-baseline-input/epics/include/compiler/gcc","stage_binary":true}]

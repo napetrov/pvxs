@@ -10,7 +10,7 @@ stager = (ROOT / ".github/workflows/abicheck-stage-installed.sh").read_text()
 for name, text in {"shadow": shadow, "baseline": baseline}.items():
     assert "pull_request_target" not in text, name
     assert "permissions:\n  contents: read" in text, name
-    assert "fb423dfd62c267b0db61739941f2d35ee2dacb16" in text, name
+    assert "112386dc8dff97c837f9fb57fbc13d4ef4c012b1" in text, name
 
 assert "git clean -ffdx" in shadow
 assert "git checkout --detach" in shadow
