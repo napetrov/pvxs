@@ -36,7 +36,7 @@ env:
   # libevent rather than the system one.
   ABICHECK_PROFILE: linux-x86_64-gcc-default-base7.0-bundled-libevent
   # One immutable, merged abicheck revision for every Action reference.
-  ABICHECK_REF: e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+  ABICHECK_REF: 902ee996795dbe529a5d6d348a220864634c0e2b
 
 jobs:
   native:
@@ -372,7 +372,7 @@ jobs:
       if: ${{ steps.candidate.outcome == 'success' && github.event_name == 'pull_request' }}
       id: base-source
       continue-on-error: true
-      uses: abicheck/abicheck/actions/verify-baseline-source@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+      uses: abicheck/abicheck/actions/verify-baseline-source@902ee996795dbe529a5d6d348a220864634c0e2b
       with:
         mode: producer-run
         workflow: .github/workflows/ci-scripts-build.yml
@@ -406,7 +406,7 @@ jobs:
     - name: Locate candidate snapshots
       id: snapshots
       if: ${{ steps.candidate.outcome == 'success' }}
-      uses: abicheck/abicheck/actions/resolve-baseline@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+      uses: abicheck/abicheck/actions/resolve-baseline@902ee996795dbe529a5d6d348a220864634c0e2b
       with:
         kind: members
         baseline-path: ${{ env.CANDIDATE_DIR }}
@@ -419,7 +419,7 @@ jobs:
     - name: 'libpvxs vs accepted-main'
       id: main-core
       if: ${{ always() && steps.snapshots.outcome == 'success' && github.event_name == 'pull_request' }}
-      uses: abicheck/abicheck/actions/check-target@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+      uses: abicheck/abicheck/actions/check-target@902ee996795dbe529a5d6d348a220864634c0e2b
       with:
         name: libpvxs
         profile: ${{ env.ABICHECK_PROFILE }}
@@ -432,14 +432,12 @@ jobs:
         gate-mode: advisory
         new-library: ${{ fromJSON(steps.snapshots.outputs.snapshot-paths).libpvxs }}
         build-config: .ci-local/abicheck.yml
-        head-sha: ${{ github.sha }}
         base-ref: ${{ github.event.pull_request.base.ref }}
-        severity-preset: default
 
     - name: 'libpvxsIoc vs accepted-main'
       id: main-ioc
       if: ${{ always() && steps.snapshots.outcome == 'success' && github.event_name == 'pull_request' }}
-      uses: abicheck/abicheck/actions/check-target@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+      uses: abicheck/abicheck/actions/check-target@902ee996795dbe529a5d6d348a220864634c0e2b
       with:
         name: libpvxsIoc
         profile: ${{ env.ABICHECK_PROFILE }}
@@ -452,14 +450,12 @@ jobs:
         gate-mode: advisory
         new-library: ${{ fromJSON(steps.snapshots.outputs.snapshot-paths).libpvxsIoc }}
         build-config: .ci-local/abicheck.yml
-        head-sha: ${{ github.sha }}
         base-ref: ${{ github.event.pull_request.base.ref }}
-        severity-preset: default
 
     - name: 'libpvxs vs release-contract'
       id: rel-core
       if: ${{ always() && steps.snapshots.outcome == 'success' }}
-      uses: abicheck/abicheck/actions/check-target@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+      uses: abicheck/abicheck/actions/check-target@902ee996795dbe529a5d6d348a220864634c0e2b
       with:
         name: libpvxs
         profile: ${{ env.ABICHECK_PROFILE }}
@@ -472,13 +468,11 @@ jobs:
         explicit-id: release
         new-library: ${{ fromJSON(steps.snapshots.outputs.snapshot-paths).libpvxs }}
         build-config: .ci-local/abicheck.yml
-        head-sha: ${{ github.sha }}
-        severity-preset: default
 
     - name: 'libpvxsIoc vs release-contract'
       id: rel-ioc
       if: ${{ always() && steps.snapshots.outcome == 'success' }}
-      uses: abicheck/abicheck/actions/check-target@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+      uses: abicheck/abicheck/actions/check-target@902ee996795dbe529a5d6d348a220864634c0e2b
       with:
         name: libpvxsIoc
         profile: ${{ env.ABICHECK_PROFILE }}
@@ -491,8 +485,6 @@ jobs:
         explicit-id: release
         new-library: ${{ fromJSON(steps.snapshots.outputs.snapshot-paths).libpvxsIoc }}
         build-config: .ci-local/abicheck.yml
-        head-sha: ${{ github.sha }}
-        severity-preset: default
 
     # Each id below is check-target's OWN canonical check-id output. This
     # step is the single declaration of what the run was SUPPOSED to
@@ -554,7 +546,7 @@ jobs:
     - name: Aggregate both components
       id: aggregate
       if: ${{ always() }}
-      uses: abicheck/abicheck/actions/aggregate@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+      uses: abicheck/abicheck/actions/aggregate@902ee996795dbe529a5d6d348a220864634c0e2b
       with:
         reports-dir: ${{ env.REPORT_DIR }}
         manifest-path: ${{ env.EXPECTED_TARGETS }}

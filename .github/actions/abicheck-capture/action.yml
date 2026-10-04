@@ -120,7 +120,7 @@ runs:
 
     - name: Capture ABI snapshots (libpvxs, libpvxsIoc)
       id: capture
-      uses: abicheck/abicheck/actions/baseline@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+      uses: abicheck/abicheck/actions/baseline@902ee996795dbe529a5d6d348a220864634c0e2b
       with:
         library-spec: ${{ steps.epics.outputs.spec }}
         # Binding is abicheck's: it walks the document as JSON and inserts

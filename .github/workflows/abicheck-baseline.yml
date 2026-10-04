@@ -38,7 +38,7 @@ permissions:
 
 env:
   ABICHECK_PROFILE: linux-x86_64-gcc-default-base7.0-bundled-libevent
-  ABICHECK_REF: e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+  ABICHECK_REF: 902ee996795dbe529a5d6d348a220864634c0e2b
 
 jobs:
   # ── Automatic: publish the tag build's own capture ─────────────────────
@@ -62,7 +62,7 @@ jobs:
       eligible: ${{ steps.tag.outputs.eligible }}
     steps:
     - id: tag
-      uses: abicheck/abicheck/actions/verify-baseline-source@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+      uses: abicheck/abicheck/actions/verify-baseline-source@902ee996795dbe529a5d6d348a220864634c0e2b
       with:
         mode: tag
         tag: ${{ github.event.workflow_run.head_branch }}
@@ -81,7 +81,7 @@ jobs:
       # the producer run this publication was triggered by.
       actions: read
       contents: write
-    uses: abicheck/abicheck/.github/workflows/publish-baseline.yml@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+    uses: abicheck/abicheck/.github/workflows/publish-baseline.yml@902ee996795dbe529a5d6d348a220864634c0e2b
     with:
       # Publish the finished set the producer captured; no dump, no build
       # query, no compiler, no comparison happens in this workflow.
@@ -128,7 +128,7 @@ jobs:
 
     - name: Resolve the requested tag
       id: tag
-      uses: abicheck/abicheck/actions/verify-baseline-source@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+      uses: abicheck/abicheck/actions/verify-baseline-source@902ee996795dbe529a5d6d348a220864634c0e2b
       with:
         mode: tag
         tag: ${{ inputs.tag }}
@@ -185,7 +185,7 @@ jobs:
     permissions:
       actions: read
       contents: write
-    uses: abicheck/abicheck/.github/workflows/publish-baseline.yml@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+    uses: abicheck/abicheck/.github/workflows/publish-baseline.yml@902ee996795dbe529a5d6d348a220864634c0e2b
     with:
       # Same-run handoff: the artifact was uploaded by bootstrap-build, in
       # this run, so no source-run verification is needed or possible.

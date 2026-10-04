@@ -15,8 +15,14 @@ a pinned abicheck Action.
 | `.ci-local/abicheck.yml` | how the public headers are parsed for extraction |
 | `.github/actions/abicheck-capture/action.yml` | EPICS build-context resolution, then one `uses:` |
 
-Every abicheck Action is pinned to one merged, immutable revision, named once
-per workflow as `ABICHECK_REF`.
+Every abicheck Action is pinned to one merged, immutable revision. The SHA is
+repeated in each `uses:` because GitHub does not expand expressions there;
+`ABICHECK_REF` carries the same value to the inputs that record it.
+
+The pin is a `main` revision, not the `v0.6.0` release tag, deliberately:
+`aggregate`, `report`, `verify-baseline-source` and `verify-source-run` do not
+exist in `v0.6.0`, and that tag is not an ancestor of `main`. Repin to a
+release once those four ship in one.
 
 ## Selected surface and profile
 
@@ -208,6 +214,11 @@ execution boundary.
   through `-I` roots are still attributed to `libpvxs`, and `pvxs::version_*`
   to `libpvxsIoc`. Both fold to zero gating findings and are labelled
   pre-existing on both sides. No suppressions are added here.
+- **Toolchain drift is upstream's to catch, not ours.** The profile name does
+  not pin the runner image, so a runner upgrade can change the compiler under
+  a published baseline. That needs no guard here: a mismatched pair resolves
+  as `profile_mismatch` with `verdict: null` and exit 16, which is explicitly
+  not a pass.
 - **No published baselines yet.** The fork has tags but no GitHub Releases
   carrying the asset, and `master` does not yet contain the integration, so
   no push run of a base commit has produced a candidate artifact. Both are

@@ -71,7 +71,7 @@ jobs:
     # compatibility outcome from the run's conclusion.
     - name: Verify the producer run and acquire its report
       id: source
-      uses: abicheck/abicheck/actions/verify-source-run@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+      uses: abicheck/abicheck/actions/verify-source-run@902ee996795dbe529a5d6d348a220864634c0e2b
       with:
         source-run-id: ${{ github.event.workflow_run.id }}
         expect-repository: ${{ github.repository }}
@@ -114,7 +114,7 @@ jobs:
 
     - name: Publish the ABI/API report
       id: publish
-      uses: abicheck/abicheck/actions/report@e38c3f91b8f956f7c8fa51b60d17fc4030969dec
+      uses: abicheck/abicheck/actions/report@902ee996795dbe529a5d6d348a220864634c0e2b
       with:
         report: ${{ steps.source.outputs.report-path }}
         repository: ${{ github.repository }}
