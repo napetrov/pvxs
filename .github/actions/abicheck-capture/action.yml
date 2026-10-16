@@ -35,7 +35,7 @@ inputs:
   baseline-generation:
     description: 'Scanner-compatibility generation recorded in the manifest.'
     required: false
-    default: '1'
+    default: '2'
   build-config:
     description: 'Path to the abicheck extraction config.'
     required: false
